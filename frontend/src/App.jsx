@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useContext } from "react";
 
 // Contextos y Providers (Ajustados a la nueva estructura)
-import { AuthProvider } from "./common/context/AutProvider"; // El componente envolvente
+import { AuthProvider } from "./common/context/AuthProvider"; // El componente envolvente
 import { ToastContext } from "./common/context/ToastContext";
 import { ToastProvider } from "./common/context/ToastProvider";
 import MainLayout from "./common/components/MainLayout";

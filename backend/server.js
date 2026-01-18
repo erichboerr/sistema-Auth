@@ -45,7 +45,7 @@ async function startServer() {
                 ]);
                 console.log('🎭 Roles iniciales creados.');
             }
-
+            
             // Verificar si hay usuarios, si no, crear el Root
             const userCount = await Usuario.count();
             if (userCount === 0) {
