@@ -1,39 +1,42 @@
-import { useState } from 'react';
-import { useAuth } from '../../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { useAuth } from "../../../common/hooks/useAuth";
+import { useToast } from "../../../common/hooks/useToast";
+import { useNavigate } from "react-router-dom";
 
 export const useLoginForm = () => {
-    const [user, setUser] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
+  const [user, setUser] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const { login } = useAuth();
-    const navigate = useNavigate();
+  const { login } = useAuth();
+  const { addToast } = useToast();
+  const navigate = useNavigate();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
-        setIsSubmitting(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-        try {
-            await login(user, password);
-            navigate('/dashboard');
-        } catch (err) {
-            setError(err.response?.data?.message || 'Error al iniciar sesión');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+    try {
+      await login(user, password);
 
-    // Exponemos solo lo que la vista necesita
-    return {
-        user,
-        setUser,
-        password,
-        setPassword,
-        error,
-        isSubmitting,
-        handleSubmit
-    };
+      // 🔹 Notificación de éxito
+      addToast(`¡Bienvenido de nuevo, ${user}!`, "success");
+
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Error en el login:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return {
+    user,
+    setUser,
+    password,
+    setPassword,
+    isSubmitting,
+    handleSubmit,
+    // El estado 'error' ahora lo maneja el Toast global
+  };
 };
