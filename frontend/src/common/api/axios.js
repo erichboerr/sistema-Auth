@@ -7,7 +7,7 @@ const api = axios.create({
 // 1. Interceptor de Petición (Request)
 // Se mantiene igual, es automático para el Token
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
