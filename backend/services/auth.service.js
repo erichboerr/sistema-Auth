@@ -9,12 +9,20 @@ const login = async (username, password) => {
         include: [{ model: db.Rol, as: 'rol' }]
     });
 
-    if (!usuario) throw new Error('Credenciales inválidas'); // Mensaje genérico por seguridad
-    if (!usuario.flagHabilitado) throw new Error('Usuario deshabilitado');
+    if (!usuario) {
+        throw new Error('Usuario o contraseña incorrectos'); 
+    }
+
+    if (!usuario.flagHabilitado) {
+        throw new Error('Tu cuenta está deshabilitada. Contacta al administrador.');
+    }
 
     // 2. Verificar password
     const isMatch = await bcrypt.compare(password, usuario.password);
-    if (!isMatch) throw new Error('Credenciales inválidas');
+    if (!isMatch) {
+        // Usamos el MISMO mensaje que arriba para no dar pistas
+        throw new Error('Usuario o contraseña incorrectos');
+    }
 
     // 3. Generar JWT con información del Rol
     const token = jwt.sign(
