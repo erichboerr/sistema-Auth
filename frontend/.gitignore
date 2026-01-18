@@ -1,2 +1,6 @@
-node_modules
-dist
+# Dependencias
+node_modules/
+
+# Build y archivos temporales
+dist/
+.vite/
