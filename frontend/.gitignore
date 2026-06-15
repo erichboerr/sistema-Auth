@@ -4,3 +4,7 @@ node_modules/
 # Build y archivos temporales
 dist/
 .vite/
+
+.env
+.env.example
+.env.production
