@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { Sequelize, DataTypes } from 'sequelize';
-import sequelize from '../config/db.js'; // <-- Verifica que este archivo exporte 'default'
+import sequelize from '../config/db.js'; 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

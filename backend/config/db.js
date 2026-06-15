@@ -1,5 +1,5 @@
 import { Sequelize } from 'sequelize';
-import dotenv from 'dotenv';
+import dotenv from 'dotenv-flow';
 
 dotenv.config();
 
@@ -30,6 +30,3 @@ const sequelize = new Sequelize(
 // 3. EXPORTACIONES CLAVE:
 // Exportamos la instancia como default para que 'models/index.js' funcione
 export default sequelize; 
-
-// Exportamos 'development' de forma nombrada por si config.js lo necesita
-// (Aunque ya lo tienes arriba con export const development)

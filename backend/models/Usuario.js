@@ -4,7 +4,6 @@ export default (sequelize, DataTypes) => {
   const Usuario = sequelize.define(
     "Usuario",
     {
-      //tus campos id, user, password, rolId, flagHabilitado se mantienen igual
       id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
       user: { type: DataTypes.STRING, allowNull: false, unique: true },
       password: { type: DataTypes.STRING, allowNull: false },
@@ -31,7 +30,6 @@ export default (sequelize, DataTypes) => {
     },
   );
 
-  // AGREGAR ESTO:
   Usuario.associate = (models) => {
     // Un usuario pertenece a un Rol
     Usuario.belongsTo(models.Rol, {

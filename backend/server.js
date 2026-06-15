@@ -1,49 +1,10 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import dotenv from 'dotenv';
+import dotenv from 'dotenv-flow';
 import sequelize from './config/db.js';
 import { ensureDatabaseExists } from './config/setup.js';
-import authRoutes from './routes/auth.routes.js';
 import db from './models/index.js';
+import app from './app.js';
 
 dotenv.config();
-
-const app = express();
-
-// --- Seguridad: Helmet ---
-// Setea automáticamente varios headers HTTP de seguridad
-// (X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security, etc.)
-// para mitigar ataques comunes (clickjacking, sniffing de MIME, etc.)
-app.use(helmet());
-
-// --- CORS ---
-// CORS_ORIGIN puede tener uno o varios orígenes separados por coma,
-// por ejemplo: "http://localhost:5173,https://miapp.gob.ar"
-// Si no está definido, no se permite ningún origen externo (más restrictivo).
-const allowedOrigins = (process.env.CORS_ORIGIN || '')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-
-app.use(cors({
-    origin: (origin, callback) => {
-        // "origin" es undefined en requests sin navegador (ej: Postman, curl)
-        // o same-origin. Las permitimos para no romper herramientas de testing.
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error(`Origen no permitido por CORS: ${origin}`));
-        }
-    },
-    credentials: true, // permite el envío de cookies/headers de auth entre dominios
-}));
-
-// Parsea el body de las requests como JSON
-app.use(express.json());
-
-// --- Rutas ---
-app.use('/api/auth', authRoutes);
 
 const PORT = process.env.PORT || 4000;
 
@@ -95,6 +56,7 @@ async function startServer() {
                 console.log('⚠️  Cambiá esta contraseña apenas inicies sesión por primera vez.');
             }
         }
+        
 
         app.listen(PORT, () => {
             console.log(`🚀 Servidor listo en http://localhost:${PORT}`);

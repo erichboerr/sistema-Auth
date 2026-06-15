@@ -2,7 +2,7 @@ import authService from '../services/auth.service.js';
 
 export const login = async (req, res) => {
     try {
-        const { user, password } = req.body; // Cambiado de username a user
+        const { user, password } = req.body;
 
         if (!user || !password) {
             return res.status(400).json({ message: "Usuario y contraseña son requeridos" });
