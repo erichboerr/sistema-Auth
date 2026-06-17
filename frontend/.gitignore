@@ -5,6 +5,8 @@ node_modules/
 dist/
 .vite/
 
+# Variables de entorno con credenciales — NUNCA subir al repo
 .env
-.env.example
+.env.development
 .env.production
+# .env.example SÍ se commitea — es el template sin credenciales para nuevos devs

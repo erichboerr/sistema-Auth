@@ -1,16 +1,372 @@
-# React + Vite
+# 🖥️ Sistema de Autenticación — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend de autenticación listo para usar como base en nuevos proyectos.  
+Construido con **React 19**, **Vite**, **Tailwind CSS** y **React Router**.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 📋 Tabla de contenidos
 
-## React Compiler
+- [Características](#-características)
+- [Tecnologías](#-tecnologías)
+- [Estructura del proyecto](#-estructura-del-proyecto)
+- [Requisitos previos](#-requisitos-previos)
+- [Instalación y primer arranque](#-instalación-y-primer-arranque)
+- [Variables de entorno](#-variables-de-entorno)
+- [Scripts disponibles](#-scripts-disponibles)
+- [Arquitectura de estado](#-arquitectura-de-estado)
+- [Cómo agregar páginas nuevas](#-cómo-agregar-páginas-nuevas)
+- [Cómo usar los Toasts](#-cómo-usar-los-toasts)
+- [Protección de rutas por rol](#-protección-de-rutas-por-rol)
+- [Despliegue en producción](#-despliegue-en-producción)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## ✅ Características
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Login con JWT — token guardado en sessionStorage
+- Verificación automática de sesión al recargar la página
+- Loader de pantalla completa mientras verifica la sesión (sin flash de login)
+- Interceptores de Axios centralizados con cleanup (sin acumulación de listeners)
+- Sistema de notificaciones Toast global (success, error, warning, info)
+- Rutas protegidas por autenticación y por rol
+- Sidebar colapsable con soporte para grupos de navegación
+- Layout responsivo con header y sidebar fijos
+- Variables de entorno por ambiente (dev / prod)
+- Proxy de desarrollo hacia el backend (sin problemas de CORS en dev)
+
+---
+
+## 🛠 Tecnologías
+
+| Paquete | Uso |
+|---|---|
+| react | UI declarativa con hooks |
+| react-dom | Renderizado en el navegador |
+| react-router-dom | Navegación y rutas protegidas |
+| axios | Cliente HTTP con interceptores centralizados |
+| lucide-react | Íconos SVG consistentes |
+| react-icons | Íconos complementarios (FA, etc.) |
+| tailwindcss | Estilos utilitarios |
+| vite | Build tool y servidor de desarrollo |
+
+---
+
+## 📁 Estructura del proyecto
+
+```
+frontend/
+├── public/
+│   └── favicon.png
+│
+├── src/
+│   ├── common/                      # Todo lo compartido entre páginas
+│   │   ├── components/
+│   │   │   ├── MainLayout.jsx       # Layout principal: sidebar + header + outlet
+│   │   │   ├── NavItem.jsx          # Componente NavGroup para submenús colapsables
+│   │   │   ├── ProtectedRoute.jsx   # Guarda de ruta: verifica auth y rol
+│   │   │   ├── Sidebar.jsx          # Barra lateral fija con navegación
+│   │   │   └── ToastItem.jsx        # Ítem individual de notificación
+│   │   │
+│   │   ├── context/
+│   │   │   ├── AuthContext.js       # Contexto de autenticación (createContext)
+│   │   │   ├── AuthProvider.jsx     # Estado global de sesión: user, login, logout
+│   │   │   ├── ToastContext.js      # Contexto de toasts (createContext)
+│   │   │   └── ToastProvider.jsx    # Estado global de notificaciones
+│   │   │
+│   │   ├── hooks/
+│   │   │   ├── useAuth.js           # Hook para consumir AuthContext
+│   │   │   └── useToast.js          # Hook para consumir ToastContext
+│   │   │
+│   │   └── services/
+│   │       └── api.js               # Instancia de Axios + interceptores
+│   │
+│   ├── pages/
+│   │   ├── Dashboard/
+│   │   │   └── Dashboard.jsx        # Página de inicio post-login
+│   │   └── Login/
+│   │       ├── Login.jsx            # UI del formulario de login
+│   │       └── hooks/
+│   │           └── useLoginForm.js  # Lógica del formulario (submit, estado)
+│   │
+│   ├── App.jsx                      # Rutas, providers y setup de interceptores
+│   ├── main.jsx                     # Punto de entrada de React
+│   └── index.css                    # Estilos globales + directivas de Tailwind
+│
+├── .env                             # Variables locales (NO se commitea)
+├── .env.example                     # Template sin credenciales (sí se commitea)
+├── .env.production                  # Variables de producción (NO se commitea)
+├── vite.config.js                   # Configuración de Vite + proxy de desarrollo
+├── tailwind.config.js               # Configuración de Tailwind
+└── package.json
+```
+
+---
+
+## 📦 Requisitos previos
+
+- Node.js v18 o superior
+- npm v9 o superior
+- El backend corriendo en http://localhost:4000 (ver README del backend)
+
+---
+
+## 🚀 Instalación y primer arranque
+
+### 1. Instalar dependencias
+
+```bash
+cd frontend
+npm install
+```
+
+### 2. Configurar variables de entorno
+
+```bash
+cp .env.example .env
+```
+
+Editá .env con los valores de tu entorno:
+
+```
+VITE_API_URL=http://localhost:4000/api
+VITE_APP_NAME=Mi App
+```
+
+### 3. Levantar en modo desarrollo
+
+```bash
+npm run dev
+```
+
+El frontend queda disponible en http://localhost:5173.
+Las llamadas a /api se redirigen automáticamente al backend via proxy (sin CORS).
+
+### 4. Credenciales del usuario inicial
+
+```
+Usuario:    root
+Contraseña: Root123
+```
+
+> Estas credenciales las crea el seeder del backend. Ver README del backend.
+
+---
+
+## 🔑 Variables de entorno
+
+| Variable | Requerida | Descripción |
+|---|---|---|
+| VITE_API_URL | Sí | URL base del backend. En dev: http://localhost:4000/api |
+| VITE_APP_NAME | Sí | Nombre de la app — aparece en el login y en el sidebar |
+
+> En Vite, solo las variables que empiezan con VITE_ son accesibles desde el código (import.meta.env.VITE_*). El resto queda invisible por seguridad.
+
+---
+
+## 📜 Scripts disponibles
+
+```bash
+npm run dev      # Levanta el servidor de desarrollo con HMR
+npm run build    # Genera el bundle de producción en /dist
+npm run preview  # Previsualiza el build de producción localmente
+npm run lint     # Corre ESLint sobre todo el proyecto
+```
+
+---
+
+## 🏗 Arquitectura de estado
+
+El estado global se maneja con React Context dividido en dos providers independientes:
+
+```
+<BrowserRouter>
+  <ToastProvider>       — notificaciones globales (funciona aunque falle el auth)
+    <AuthProvider>      — sesión del usuario (verifica token al montar)
+      <AppContent />    — rutas + interceptores de Axios
+    </AuthProvider>
+  </ToastProvider>
+</BrowserRouter>
+```
+
+### AuthProvider
+
+Al montar, verifica automáticamente si hay un token en sessionStorage y lo valida
+contra el backend (GET /api/auth/verify). Mientras verifica muestra un loader.
+
+Expone via useAuth():
+
+```js
+const { user, login, logout, loading } = useAuth();
+// user    — { id, user, rol } | null
+// login   — async (user, password) guarda token y actualiza estado
+// logout  — limpia sessionStorage y resetea estado
+// loading — true mientras verifica la sesión inicial
+```
+
+### ToastProvider
+
+Sistema de notificaciones apilables con auto-cierre a los 5 segundos.
+Expone via useToast():
+
+```js
+const { addToast } = useToast();
+
+addToast('Operación exitosa', 'success');
+addToast('No tenés permisos', 'warning');
+addToast('Error del servidor', 'error');
+addToast('Información importante', 'info');
+```
+
+### Interceptores de Axios
+
+Configurados en App.jsx con cleanup automático para evitar acumulación:
+
+```js
+useEffect(() => {
+    const eject = setupInterceptors(addToast, logout);
+    return () => eject(); // limpia antes de re-ejecutar o desmontar
+}, [addToast, logout]);
+```
+
+Respuestas manejadas automáticamente:
+
+| Status | Acción |
+|---|---|
+| 401 | Toast de sesión expirada + logout() (excepto en /login) |
+| 403 | Toast de sin permisos |
+| 429 | Toast de demasiados intentos |
+| 500+ | Toast de error del servidor |
+| 400 | Toast con el mensaje del backend |
+
+---
+
+## ➕ Cómo agregar páginas nuevas
+
+### 1. Crear la página
+
+```
+src/pages/Usuarios/
+  Usuarios.jsx
+  hooks/
+    useUsuarios.js
+```
+
+### 2. Agregar la ruta en App.jsx
+
+```jsx
+import Usuarios from './pages/Usuarios/Usuarios';
+
+// Dentro de <Route element={<MainLayout />}>:
+<Route path="/usuarios" element={<Usuarios />} />
+```
+
+### 3. Agregar el link en Sidebar.jsx
+
+```jsx
+import { Users } from 'lucide-react';
+
+<Link to="/usuarios" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors">
+    <Users size={20} className="shrink-0" />
+    {!isCollapsed && <span>Usuarios</span>}
+</Link>
+```
+
+---
+
+## 🔔 Cómo usar los Toasts
+
+Desde cualquier componente dentro de ToastProvider:
+
+```jsx
+import { useToast } from '../common/hooks/useToast';
+
+const MiComponente = () => {
+    const { addToast } = useToast();
+
+    const handleGuardar = async () => {
+        try {
+            await api.post('/recursos', datos);
+            addToast('Guardado correctamente', 'success');
+        } catch {
+            // Los errores de red (401, 500, etc.) ya los maneja el interceptor
+            // Solo agregás toasts para errores de negocio específicos
+            addToast('El nombre ya está en uso', 'warning');
+        }
+    };
+};
+```
+
+---
+
+## 🛡 Protección de rutas por rol
+
+ProtectedRoute acepta allowedRoles con los roles que pueden acceder:
+
+```jsx
+// Solo Root puede entrar a /admin
+<Route element={<ProtectedRoute allowedRoles={['Root']} />}>
+    <Route element={<MainLayout />}>
+        <Route path="/admin" element={<Admin />} />
+    </Route>
+</Route>
+
+// Cualquier usuario autenticado (sin allowedRoles)
+<Route element={<ProtectedRoute />}>
+    <Route element={<MainLayout />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+    </Route>
+</Route>
+```
+
+Si el usuario no tiene el rol requerido, es redirigido a /dashboard.
+
+> La protección por rol en el frontend es solo UX. La autorización real debe
+> estar en el backend con el middleware authorize() por ruta.
+
+---
+
+## 🖥 Despliegue en producción
+
+### 1. Configurar variables de producción
+
+Editá .env.production con los valores reales del servidor:
+
+```
+VITE_API_URL=https://tudominio.com/api
+VITE_APP_NAME=Mi App
+```
+
+### 2. Generar el build
+
+```bash
+npm run build
+```
+
+Genera la carpeta /dist con los archivos estáticos listos para servir.
+
+### 3. Configurar Nginx
+
+```nginx
+server {
+    listen 80;
+    server_name tudominio.com;
+    root /var/www/mi-app/dist;
+    index index.html;
+
+    # React Router — redirige todo al index.html para que maneje las rutas
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Proxy al backend para las llamadas a /api
+    location /api/ {
+        proxy_pass http://localhost:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+> En producción el proxy de Vite no aplica — Nginx se encarga de redirigir /api al backend.

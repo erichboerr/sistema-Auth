@@ -1,43 +1,66 @@
 import axios from 'axios';
 
+// Instancia principal de axios para toda la app.
+// La baseURL se lee del .env — nunca hardcodeada acá.
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
 });
 
-// 🔹 ESTA ES LA PIEZA QUE FALTA:
-// Se encarga de PEGAR el token en cada llamada que hagas
-api.interceptors.request.use((config) => {
-  const token = sessionStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-}, (error) => {
-  return Promise.reject(error);
-});
+// Interceptor de request: adjunta el token JWT en cada llamada automáticamente.
+// Si el token no existe, la request sale igual (el backend responderá 401 o 403).
+api.interceptors.request.use(
+    (config) => {
+        const token = sessionStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
 
-// Tu función de interceptores de respuesta se mantiene igual
+// Configura los interceptores de respuesta.
+//
+// IMPORTANTE: devuelve una función de cleanup que eyecta los interceptores.
+// El useEffect en App.jsx la llama en su return para evitar acumulación:
+//
+//   useEffect(() => {
+//     const eject = setupInterceptors(addToast, logout);
+//     return () => eject(); // ← limpia antes de re-ejecutar o desmontar
+//   }, [addToast, logout]);
+//
+// Sin esto, cada vez que logout o addToast cambian se agrega un interceptor
+// nuevo sin eliminar el anterior → múltiples respuestas al mismo error.
 export const setupInterceptors = (addToast, logout) => {
-  api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-      const message = error.response?.data?.message || "Error inesperado en el servidor";
-      
-      if (error.response?.status === 401) {
-        addToast("Sesión expirada. Por favor, reingresa.", "error");
-        logout();
-      } else if (error.response?.status === 403) {
-        // 🔹 Nota: Si el error 403 es por el verify inicial, 
-        // podrías querer llamar a logout() aquí también para limpiar la app
-        addToast("Acceso denegado", "warning");
-        logout(); 
-      } else {
-        addToast(message, "error");
-      }
+    const interceptorId = api.interceptors.response.use(
+        (response) => response,
+        (error) => {
+            const status = error.response?.status;
+            const message = error.response?.data?.message || 'Error inesperado en el servidor';
 
-      return Promise.reject(error);
-    }
-  );
+            if (status === 401) {
+                // Solo avisamos si no estamos en /login — ahí el error lo muestra el form
+                if (!window.location.pathname.includes('/login')) {
+                    addToast('Sesión expirada. Por favor, reingresá.', 'error');
+                }
+                logout();
+            } else if (status === 403) {
+                addToast('No tenés permisos para esta acción.', 'warning');
+            } else if (status === 429) {
+                // Rate limit del backend — demasiados intentos de login
+                addToast('Demasiados intentos. Esperá unos minutos.', 'warning');
+            } else if (status >= 500) {
+                addToast('Error interno del servidor.', 'error');
+            } else if (status === 400) {
+                addToast(message, 'warning');
+            }
+
+            return Promise.reject(error);
+        }
+    );
+
+    // Devolvemos la función de cleanup: eyecta este interceptor específico por su ID
+    return () => api.interceptors.response.eject(interceptorId);
 };
 
 export default api;

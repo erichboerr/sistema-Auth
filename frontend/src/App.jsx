@@ -1,71 +1,82 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useContext } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
-// Contextos y Providers (Ajustados a la nueva estructura)
-import { AuthProvider } from "./common/context/AuthProvider"; // El componente envolvente
-import { ToastContext } from "./common/context/ToastContext";
-import { ToastProvider } from "./common/context/ToastProvider";
-import MainLayout from "./common/components/MainLayout";
+// Providers — envuelven la app para dar acceso global al estado
+import { AuthProvider } from './common/context/AuthProvider';
+import { ToastProvider } from './common/context/ToastProvider';
 
-// Servicios y Utilidades
-import { setupInterceptors } from "./common/services/api";
-// Usaremos el logout que viene directamente del contexto para mayor consistencia
-import { useAuth } from "./common/hooks/useAuth";
+// Hooks centralizados
+import { useAuth } from './common/hooks/useAuth';
+import { useToast } from './common/hooks/useToast';
 
-// Componentes y Páginas
-import Login from "./pages/Login/Login";
-import Dashboard from "./pages/Dashboard/Dashboard";
-import ProtectedRoute from "./common/components/ProtectedRoute";
+// Servicio de API — interceptores de respuesta
+import { setupInterceptors } from './common/services/api';
 
+// Layout y páginas
+import MainLayout from './common/components/MainLayout';
+import ProtectedRoute from './common/components/ProtectedRoute';
+import Login from './pages/Login/Login';
+import Dashboard from './pages/Dashboard/Dashboard';
+
+// AppContent va adentro de los Providers para poder usar sus hooks
 function AppContent() {
-  // 🔹 Usamos los contextos centralizados
-  const { logout } = useAuth();
-  const { addToast } = useContext(ToastContext);
+    const { logout } = useAuth();
+    const { addToast } = useToast();
 
-  useEffect(() => {
-    // 🔹 Pasamos la función logout del contexto al interceptor
-    // Esto asegura que si el servidor da 401, se limpie el estado global
-    setupInterceptors(addToast, logout);
-  }, [addToast, logout]);
+    useEffect(() => {
+        // Registramos los interceptores de respuesta y guardamos la función de cleanup.
+        // El return del useEffect la ejecuta automáticamente:
+        //   - Antes de re-ejecutar el efecto (si logout o addToast cambian)
+        //   - Cuando el componente se desmonta
+        // Esto evita que se acumulen múltiples interceptores activos en simultáneo.
+        const eject = setupInterceptors(addToast, logout);
+        return () => eject();
+    }, [addToast, logout]);
 
-  return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
+    return (
+        <Routes>
+            {/* Ruta pública */}
+            <Route path="/login" element={<Login />} />
 
-      {/* Rutas Protegidas */}
-      <Route element={<ProtectedRoute />}>
-        <Route element={<MainLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          {/* Aquí irán tus futuras rutas como /insumos, /reportes, etc. */}
-        </Route>
-      </Route>
+            {/* Rutas protegidas — ProtectedRoute verifica sesión y rol */}
+            <Route element={<ProtectedRoute />}>
+                <Route element={<MainLayout />}>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    {/* Aquí irán las rutas futuras: /usuarios, /reportes, etc. */}
+                </Route>
+            </Route>
 
-      {/* Redirecciones y Errores */}
-      <Route path="/" element={<Navigate to="/dashboard" />} />
-      <Route
-        path="*"
-        element={
-          <div className="p-10 text-center">
-            <h1>404 - Pagina No Encontrada</h1>
-          </div>
-        }
-      />
-    </Routes>
-  );
+            {/* Redirecciones */}
+            <Route path="/" element={<Navigate to="/dashboard" />} />
+
+            {/* 404 */}
+            <Route
+                path="*"
+                element={
+                    <div className="min-h-screen flex items-center justify-center bg-slate-100">
+                        <div className="text-center">
+                            <h1 className="text-6xl font-bold text-slate-300">404</h1>
+                            <p className="text-slate-500 mt-2">Página no encontrada</p>
+                        </div>
+                    </div>
+                }
+            />
+        </Routes>
+    );
 }
 
 function App() {
-  return (
-    <BrowserRouter>
-      {/* 1. ToastProvider envuelve todo (incluso si falla el Auth, los Toasts funcionan) */}
-      <ToastProvider>
-        {/* 2. AuthProvider maneja la sesión */}
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </ToastProvider>
-    </BrowserRouter>
-  );
+    return (
+        <BrowserRouter>
+            {/* ToastProvider va primero: si falla el Auth, los toasts siguen funcionando */}
+            <ToastProvider>
+                {/* AuthProvider verifica la sesión al montar */}
+                <AuthProvider>
+                    <AppContent />
+                </AuthProvider>
+            </ToastProvider>
+        </BrowserRouter>
+    );
 }
 
 export default App;
