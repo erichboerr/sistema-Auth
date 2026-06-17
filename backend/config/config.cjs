@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("./env.cjs");
 
 module.exports = {
   development: {

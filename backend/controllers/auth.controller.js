@@ -1,33 +1,40 @@
 import authService from '../services/auth.service.js';
 
-export const login = async (req, res) => {
+// POST /api/auth/login
+export const login = async (req, res, next) => {
     try {
         const { user, password } = req.body;
 
+        // Validación básica de campos requeridos
+        // El service maneja el resto de la lógica de negocio
         if (!user || !password) {
-            return res.status(400).json({ message: "Usuario y contraseña son requeridos" });
+            return res.status(400).json({ message: 'Usuario y contraseña son requeridos' });
         }
 
         const result = await authService.login(user, password);
-        
+
         return res.status(200).json({
-            message: "Login exitoso",
-            ...result // Esto trae el token y el objeto user {id, user, rol}
+            message: 'Login exitoso',
+            ...result // Incluye: token y user { id, user, rol }
         });
 
     } catch (error) {
-        // Si el error es de credenciales, mandamos 401, si es otra cosa 500
-        const status = error.message === 'Credenciales inválidas' ? 401 : 500;
-        return res.status(status).json({ message: error.message });
+        // No manejamos el error acá — se lo pasamos al errorHandler centralizado
+        // (definido en app.js como último middleware)
+        // Él decide el status code y el formato de respuesta según error.isCustom
+        next(error);
     }
 };
 
-export const verify = async (req, res) => {
+// GET /api/auth/verify
+export const verify = async (req, res, next) => {
     try {
-        // El req.user viene cargado desde el middleware verifyToken
+        // req.user viene cargado por el middleware verifyToken
+        // Solo buscamos los datos frescos del usuario en la DB
         const userData = await authService.verifyUser(req.user.id);
         return res.status(200).json(userData);
+
     } catch (error) {
-        return res.status(401).json({ message: error.message });
+        next(error);
     }
 };
